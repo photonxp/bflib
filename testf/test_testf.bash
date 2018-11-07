@@ -77,12 +77,12 @@ test_assert_equal_num(){
     assert_equal_str "0" "$?"
 
     rslt=$(assert_equal_num 1 2)
-    printf "$rslt" | grep -Eq "Fail: 1 != 2"
+    printf "$rslt" | grep -Eq "Fail: '1' != '2'"
     assert_equal_str "0" "$?"
     
     rslt=$(assert_equal_num "a" "a")
     assert_equal_str "2" "$?"
-    printf "$rslt" | grep -Eq "Miscellaneous Err: 2"
+    printf "$rslt" | grep -Eq "Miscellaneous Err: retcode '2'"
     assert_equal_str "0" "$?"
 }
 
@@ -98,7 +98,6 @@ test_assert_in_str_raw(){
 }
 
 test_in_str_escape_actl(){
-    assert_in_str_escape_actl "\n" "\n"
     rslt=$(assert_in_str_escape_actl "\n" "\n")
     assert_equal_num 64 $?
 
@@ -137,7 +136,7 @@ test_assert_in_str(){
     
     rslt=$(assert_in_str "a" "")
     #echo "$rslt"
-    printf "$rslt" | grep -Eq "a IS NOT in "
+    printf "$rslt" | grep -Eq "'a' IS NOT in ''"
     assert_equal_num 0 $?
 
     rslt=$(assert_in_str "a" "a")
@@ -195,11 +194,11 @@ test_assert_ltarget_not_exists(){
 set -- -o
 opt="$1"
 
-#run_tests test_assert_equal_str_raw
+#run_tests test_assert_ltarget_exists
 
 tests1="test_hello test_init_dir_unexist test_init_dir_exist_no_op test_init_dir_exist_op"
 tests2="test_assert_equal_str_raw test_assert_equal_str test_assert_equal_num test_assert_in_str_raw test_in_str_escape_actl test_assert_in_str"
 test3="test_assert_file_exists test_assert_file_not_exists test_assert_ltarget_exists test_assert_ltarget_not_exists"
 tests="$tests1 $tests2 $tests3"
-#run_tests "$test3"
+#run_tests "$tests2"
 run_tests $tests

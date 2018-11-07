@@ -157,7 +157,7 @@ assert_equal_str_raw(){
     actual="$2"
     if [ "$expected" != "$actual" ]
         then
-        echo "Fail: $expected != $actual"
+        echo "Fail: '$expected' != '$actual'"
         return 64
     fi
 
@@ -197,13 +197,13 @@ assert_equal_num(){
     retval=$?
     if [ $retval -ge 2  ]
         then
-        echo "ERR:: Miscellaneous Err: $retval "
+        echo "ERR:: Miscellaneous Err: retcode '$retval'."
         return $retval
     fi
     
     if [ $expected -ne $actual ]
         then
-        echo "Fail: $expected != $actual"
+        echo "Fail: '$expected' != '$actual'"
         return 64 
     fi
 
@@ -229,12 +229,6 @@ assert_in_str_adapt(){
         echo "ERR:: Expt: is empty. Use assert_equal_str instead."
         return 1
     fi
-# 
-#     if [ "y" == "y$expt" ]
-#         then
-#         echo "ERR:: Expt: is empty."
-#         return 1
-#     fi
 
     retval="113"
     # grep the expected in the actual
@@ -249,19 +243,19 @@ assert_in_str_adapt(){
         printf "$actl" | grep -Pq "$expt"
         retval=$?
     else 
-        echo "ERR:: Str type $3 $4: Not implemented. Check the code."
+        echo "ERR:: Str type '$3' '$4': Not implemented. Check the code."
         return 1
     fi
 
     if [ 1 -lt $retval ]
         then
-        echo "ERR:: Misiscellaneous Err: retcode $retval"
+        echo "ERR:: Miscellaneous Err: retcode '$retval'."
         return $retval
     fi
 
     if [ 0 -ne $retval ]
         then
-        echo "Fail: $expt IS NOT in $actl"
+        echo "Fail: '$expt' IS NOT in '$actl'"
         return 64
     fi
 
@@ -309,7 +303,7 @@ assert_in_str(){
 assert_file_exists(){
     if [ ! -e "$1" ]
         then
-        echo Fail: Actl: "$1"
+        echo Fail: Actl: "'$1'"
         return 64
     fi
      
@@ -319,7 +313,7 @@ assert_file_exists(){
 assert_file_not_exists(){
     if [ -e "$1" ]
         then
-        echo Fail: Actl: "$1"
+        echo Fail: Actl: "'$1'"
         return 64
     fi
        
@@ -329,7 +323,7 @@ assert_file_not_exists(){
 chk_is_link(){
     if [ ! -L "$1" ]
         then
-        echo "ERR:: Link: Not a symbolic link $1"
+        echo "ERR:: Link: Not a symbolic link '$1'"
         return 1
     fi
 }
@@ -342,7 +336,7 @@ assert_ltarget_exists(){
     fpath_target=$(readlink -m "$1")
     if [ ! -e "$fpath_target" ]
         then
-        echo Fail: Target File: "$fpath_target"
+        echo Fail: Target File: "'$fpath_target'"
         return 64
     fi
 
@@ -357,7 +351,7 @@ assert_ltarget_not_exists(){
     fpath_target=$(readlink -m "$1")
     if [ -e "$fpath_target" ]
         then
-        echo Fail: Target File: "$fpath_target"
+        echo Fail: Target File: "'$fpath_target'"
         return 64
     fi
 
