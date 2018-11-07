@@ -1,0 +1,61 @@
+#!/bin/bash
+
+spath=$(realpath "$0")
+swd=${spath%/*}
+source "$swd"/str.bashlib
+source "$swd"/array.bashlib
+
+ESCAPE_LIST_GLOB="* ? [ ]"
+ESCAPE_LIST_PATH="~ ."
+ESCAPE_LIST_VAR="$ { }"
+ESCAPE_LIST_OTHER=""
+ESCAPE_LIST_PRINTF="$ \ ~ * "
+ESCAPE_LIST_GREP=""
+
+char_escape(){
+    char_old="$1"
+    escape_list="$2"
+
+    char_new=$char_old
+    retval=1
+
+    length_escape_list=$(get_str_length "$escape_list")
+    for char_es in $escape_list
+        do
+        if [ "y$char_old" == "y$char_es" ]
+            then
+            char_new='\'"$char_old"
+            retval=0
+        fi
+    done
+
+    echo "$char_new"
+    return $retval
+}
+
+escape(){
+    str_old="$1"
+    escape_list="$2"
+
+    chk_empty_str "$str_old"
+    [ 1 -eq $? ] && return 1
+
+    chk_empty_str "$escape_list"
+    [ 1 -eq $? ] && return 1
+
+    length_str_old=$(get_str_length "$str_old")
+    unset arr_str_new
+    # i++
+    for (( i=0; $i<$length_str_old; i++ ))
+        do
+        char_i_old="${str_old:$i:1}"
+        char_i_new=$(char_escape "$char_i_old" "$escape_list")
+        arr_str_new[$i]="$char_i_new"
+    done
+
+    str_new=$(arr2str arr_str_new[@])
+    echo "$str_new"
+
+    return 0
+}
+
