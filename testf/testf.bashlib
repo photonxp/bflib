@@ -23,6 +23,12 @@
 # run_tests "test1" "test2"
 
 
+spath=$(realpath "$0")
+swd=${spath%/*}
+source "$swd"/escape.bashlib
+source "$swd"/array.bashlib
+source "$swd"/str.bashlib
+
 echo_start(){
     echo "$1 ============================="
 }
@@ -220,28 +226,62 @@ assert_in_str_adapt(){
     # chars with \char escape format 
     # are NOT interpreted after echo in the grep cmd
 
-    expt="$1"
+    expt_prev="$1"
     actl="$2"
 
     # Expt:"" has no sense in assert_in_str, use assert_equal_str
-    if [ "y" == "y$expt" ]
+    if [ "y" == "y$expt_prev" ]
         then
         echo "ERR:: Expt: is empty. Use assert_equal_str instead."
         return 1
     fi
 
-    retval="113"
+    escape_list='\'
+    expt_add_escape=$(escape "$expt_prev" "$escape_list")
+
+    retval=113
     # grep the expected in the actual
     if [[ "raw" == "$3" && "raw" == "$4" ]]
         then
         # one word "\" could cause problem in echo "$actl"
-        echo "$actl" | grep -Pq "$expt"
+        # one word "\\" could be escaped 
+        #     in echo "$actl" or printf "%s"
+        expt="$expt_add_escape"
+        printf '%s' "$actl" | grep -Pq "$expt"
         retval=$?
-    elif [[ "raw" == "$3" && "escape" == "$4" ]]
+    elif [[ "as_is" == "$3" && "raw" == "$4" ]]
         then
-        #echo "expt: $expt, actl: $actl, arg3: $3, arg4: $4"
+        # as_is: no added escape to "$expt"
+        expt="$expt_prev"
+        #printf '%s' "expt: $expt, actl: $actl, arg3: $3, arg4: $4 "
+        echo
+        printf '%s' "$actl" | grep -Pq "$expt"
+        retval=$?
+    elif [[ "as_is" == "$3" && "transcode_escape" == "$4" ]]
+        then
+        # interprete chars with excape in $actl
+        expt="$expt_prev"
+        #printf '%s' "expt: $expt, actl: $actl, arg3: $3, arg4: $4"
+        expt_interpreted=$(printf "$expt")
+        #printf '%s' "expt_interpreted: '$expt_interpreted'"
+        if [ "y" == "y$expt_interpreted" ]
+            then
+            echo "ERR:: Expt: Empty or newline expt after interpretion. Check escapes."
+            return 1
+        fi
+        #printf '%s' "$actl" | grep -Pq "$expt"
         printf "$actl" | grep -Pq "$expt"
         retval=$?
+        actl=$(printf "$actl")
+        expt=$(escape "$expt" "$escape_list")
+        : ${actl:='""' or NEWLINE}
+    elif [[ "raw" == "$3" && "transcode_escape" == "$4" ]]
+        then
+        # this if branch is probaby not very useful
+        # echo "expt: $expt, actl: $actl, arg3: $3, arg4: $4"
+        printf "$actl" | grep -Pq "$expt_add_escape"
+        retval=$?
+        expt="$expt_prev"
     else 
         echo "ERR:: Str type '$3' '$4': Not implemented. Check the code."
         return 1
@@ -255,7 +295,12 @@ assert_in_str_adapt(){
 
     if [ 0 -ne $retval ]
         then
-        echo "Fail: '$expt' IS NOT in '$actl'"
+        # KEEP THE SPACE IN THE list AFTER \
+        #list_escape='\'
+        #actl_add_escp=$(escape "$actl" "$list_escape")
+        #echo "Fail: '$expt_add_escp' IS NOT in '$actl_add_escp'"
+        printf '%s' "Fail: '$expt' IS NOT in '$actl'."
+        echo
         return 64
     fi
 
@@ -274,7 +319,15 @@ assert_in_str_raw(){
     assert_in_str_adapt "$1" "$2" "raw" "raw"
 }
 
-assert_in_str_escape_actl(){
+assert_in_str_asis_expt_raw_actl(){
+    assert_in_str_adapt "$1" "$2" "as_is" "raw"
+}
+
+assert_in_str_asis_expt_transcode_actl(){
+    assert_in_str_adapt "$1" "$2" "as_is" "transcode_escape"
+}
+
+assert_in_str_transcode_actl(){
     # for expt
     # chars with \char escape format
     # are **NOT** interpreted before grep cmd in the sub function
@@ -283,7 +336,7 @@ assert_in_str_escape_actl(){
     # chars with \char escape format
     # are interpreted before grep cmd in the sub function
 
-    assert_in_str_adapt "$1" "$2" "raw" "escape"
+    assert_in_str_adapt "$1" "$2" "raw" "transcode_escape"
 }
 
 assert_in_str(){
@@ -297,7 +350,9 @@ assert_in_str(){
     # are interpreted before grep cmd in the sub function
     # are **NOT** interpreted before grep cmd in the sub function
 
-    assert_in_str_raw "$1" "$2"
+    #assert_in_str_raw "$1" "$2"
+    #assert_in_str_asis_expt_raw_actl "$1" "$2"
+    assert_in_str_asis_expt_transcode_actl "$1" "$2"
 }
 
 assert_file_exists(){
@@ -351,7 +406,7 @@ assert_ltarget_not_exists(){
     fpath_target=$(readlink -m "$1")
     if [ -e "$fpath_target" ]
         then
-        echo Fail: Target File: "'$fpath_target'"
+        echo "Fail: Target File:" "'$fpath_target'"
         return 64
     fi
 

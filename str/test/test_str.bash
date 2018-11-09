@@ -123,6 +123,13 @@ test_get_char_by_idx(){
 test_str2arr(){
     str2arr ""
     assert_equal_num 1 $?
+
+    #str2arr "abc"
+    str2arr "abc"
+    arr=$(str2arr "abc")
+    assert_equal_num 0 $?
+    echo "arr: $arr"
+    echo "${!arr}"
 }
 
 test_str_do_iter(){
@@ -131,7 +138,8 @@ test_str_do_iter(){
     }
 
     rslt=$(str_do_iter "ab" "fun1")
-    expt="hello\\\\nhello\\\\n"
+    #expt="hello\\\\nhello\\\\n"
+    expt="hello\\\\n"
     assert_in_str "$expt" "$rslt"
 }
 
@@ -147,5 +155,5 @@ tests1="test_chk_empty_str test_get_str_length"
 tests2="test_chk_str_start_idx test_chk_str_end_idx test_get_substr_by_start_end test_chk_str_idx test_get_char_by_idx"
 tests3="test_str_do_iter test_xstr"
 tests="$tests1 $tests2 $tests3"
-#run_tests "test_xstr"
-run_tests $tests
+run_tests "test_str2arr"
+#run_tests $tests

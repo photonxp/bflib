@@ -160,7 +160,11 @@ str2arr(){
         return 1
     }
 
-    ! chk_empty_str "$str" && reterr_empty
+    #! chk_empty_str "$str" && reterr_empty
+    ! chk_empty_str "$str" && {
+        echo "ERR:: Str: Empty str."
+        return 1
+    }
     
     unset arr_str
     length=$(get_str_length "$str")

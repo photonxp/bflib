@@ -43,7 +43,7 @@ test_init_dir_exist_op(){
 }
 
 test_assert_equal_str_raw(){
-    assert_equal_str_raw "\n" "\n"
+    assert_equal_str_raw '\n' '\n'
     assert_equal_str_raw "" ""
 }
 
@@ -87,56 +87,112 @@ test_assert_equal_num(){
 }
 
 test_assert_in_str_raw(){
-    # The 2nd arg is for grep cmd to escape
-    # use 4 slash for grep -P to represent on actual \
+    # The 1st arg $expt is escaped again
+    #     before being sent to the grep command
+    # The 2nd arg is raw and not escaped again
     rslt=$(assert_in_str_raw "a" "ab")
     assert_equal_num 0 $?
     assert_equal_str "Pass" "$rslt"
 
-    assert_in_str_raw "\\\\" "\\"
-    assert_in_str_raw "\\\\n" "\n"
+    assert_in_str_raw '\\\\' '\\\\'
+    assert_in_str_raw '\\n' '\\n'
 }
 
-test_in_str_escape_actl(){
-    rslt=$(assert_in_str_escape_actl "\n" "\n")
+test_in_str_asis_expt_raw_actl(){
+    #  '' and "" work the same on \
+    #      in this function
+
+    # shouldn't find raw actl in pattern
+    rslt=$(assert_in_str_asis_expt_raw_actl '\t' '\t') 
+    assert_equal_num 64 $?
+    printf '%s' "$rslt" | grep -Eq "'\\\\t' IS NOT in '\\\\t'"
+    assert_equal_num 0 $?
+    
+
+    #assert_in_str_asis_expt_raw_actl '\t' "\t" 
+}
+
+test_in_str_transcode_actl(){
+    rslt=$(assert_in_str_transcode_actl "\n" "\n")
     assert_equal_num 64 $?
 
-    assert_in_str_escape_actl "\t" "\t"
+    rslt=$(assert_in_str_transcode_actl '\t' '\t')
+    assert_equal_num 64 $?
+    printf '%s' "$rslt" | grep -Eq "'\\\\t' IS NOT in '\\\\t'"
     assert_equal_num 0 $?
 
     rslt=$(assert_in_str "" "a")
+    assert_equal_num 1 $?
     printf "$rslt" | grep -Eq "Expt: is empty"
     assert_equal_num 0 $?
-
-    rslt=$(assert_in_str "a" "")
-    printf "$rslt" | grep -Eq "$1 IS NOT in $2"
-    assert_equal_num 0 $?
-
-    rslt=$(assert_in_str "a" "a")
-    printf "$rslt" | grep -Eq "Pass"
-    assert_equal_num 0 $?
-
-    rslt=$(assert_in_str "a" "ba")
-    printf "$rslt" | grep -Eq "Pass"
-    assert_equal_num 0 $?
+# 
+#     rslt=$(assert_in_str "a" "")
+#     assert_equal_num 64 $?
+#     printf "$rslt" | grep -Eq "$1 IS NOT in $2"
+#     assert_equal_num 0 $?
+# 
+#     rslt=$(assert_in_str "a" "a")
+#     assert_equal_num 0 $?
+#     printf "$rslt" | grep -Eq "Pass"
+#     assert_equal_num 0 $?
+# 
+#     rslt=$(assert_in_str "a" "ba")
+#     assert_equal_num 0 $?
+#     printf "$rslt" | grep -Eq "Pass"
+#     assert_equal_num 0 $?
 }
 
 test_assert_in_str(){
+    # retval is 1 when grep "" in ""
+    # after transcoded in grep, "\n" is similary to ""
+    #     so the testcase will always pass
+    #assert_in_str "\n" "\n"
     rslt=$(assert_in_str "\n" "\n")
+    assert_equal_num 1 $?
+    printf '%s' "$rslt" | grep -Pq 'Expt: Empty or newline expt after interpretion'
+    assert_equal_num 0 $?
+    
+    rslt=$(assert_in_str "\\n" "\\n")
+    assert_equal_num 1 $?
+    printf '%s' "$rslt" | grep -Pq 'Expt: Empty or newline expt after interpretion'
+    assert_equal_num 0 $?
+
+    rslt=$(assert_in_str '\n' "\n")
+    assert_equal_num 1 $?
+    printf '%s' "$rslt" | grep -Pq 'Expt: Empty or newline expt after interpretion'
+    assert_equal_num 0 $?
+
+    # in grep, str is escaped twice, weirdly
+    # in echo, "\\" is escaped, "\n" isn't. Also weird.
+    # actl is [NEWLINE]
+    rslt=$(assert_in_str "\\\\n" "\\n")
     assert_equal_num 64 $?
+    printf "$rslt" | grep -Eq "IS NOT in"
+    assert_equal_num 0 $?
+
+    # actl is [NEWLINE]
+    rslt=$(assert_in_str '\\n' "\n")
+    assert_equal_num 64 $?
+    printf "$rslt" | grep -Eq "IS NOT in"
+    assert_equal_num 0 $?
 
     # 4 \\\\ to beinterpreted as 1 \
     # really awkward
-    assert_in_str "\\\\n" "\n"
+    rslt=$(assert_in_str "\\\\n" "\n")
+    assert_equal_num 64 $?
+    printf "$rslt" | grep -Eq "IS NOT in"
     assert_equal_num 0 $?
 
     rslt=$(assert_in_str "" "a")
     printf "$rslt" | grep -Eq "Expt: is empty"
     assert_equal_num 0 $?
     
+    #assert_in_str "a" ""
     rslt=$(assert_in_str "a" "")
+    assert_equal_num 64 $?
     #echo "$rslt"
-    printf "$rslt" | grep -Eq "'a' IS NOT in ''"
+    printf "$rslt" | grep -Eq "'a' IS NOT in"
+    printf "$rslt" | grep -Eq '"" or NEWLINE'
     assert_equal_num 0 $?
 
     rslt=$(assert_in_str "a" "a")
@@ -197,8 +253,9 @@ opt="$1"
 #run_tests test_assert_ltarget_exists
 
 tests1="test_hello test_init_dir_unexist test_init_dir_exist_no_op test_init_dir_exist_op"
-tests2="test_assert_equal_str_raw test_assert_equal_str test_assert_equal_num test_assert_in_str_raw test_in_str_escape_actl test_assert_in_str"
+tests2="test_assert_equal_str_raw test_assert_equal_str test_assert_equal_num test_assert_in_str_raw test_in_str_transcode_actl test_assert_in_str"
 test3="test_assert_file_exists test_assert_file_not_exists test_assert_ltarget_exists test_assert_ltarget_not_exists"
 tests="$tests1 $tests2 $tests3"
+#run_tests "test_assert_in_str_raw"
 #run_tests "$tests2"
 run_tests $tests

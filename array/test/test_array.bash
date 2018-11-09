@@ -3,8 +3,18 @@
 fpath=$(realpath "$0")
 swd=${fpath%/*}
 
-source "$swd"/../array.bashlib
+source "$swd"/array.bashlib
+source "$swd"/str.bashlib
+source "$swd"/escape.bashlib
 source "$swd"/testf.bashlib
+
+test_arr2str(){
+    arr=("a b" '\\' "c d")
+    # 1st arg is "str_arg_name"
+    #arr2str "str" "arr[@]"
+    str=$(arr2str "arr[@]")
+    [ 'a b\\c d' == "$str" ] && echo Pass || echo Fail
+}
 
 test_get_arr_length(){
     # doesn't work
@@ -79,5 +89,5 @@ opt="-o"
 tests1="test_get_arr_length"
 tests2="test_arr_do_iter test_arr_intersect_do"
 tests="$tests1 $tests2"
-run_tests "test_get_arr_length"
+run_tests "test_arr2str"
 #run_tests `echo "$tests"`
