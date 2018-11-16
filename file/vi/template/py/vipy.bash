@@ -18,7 +18,7 @@ source "$swd/path.bashlib"
 do_extra(){
     num_wc=$(wc -l "$fpath_new")
     num_line=${num_wc%% *}
-    echo "num_line: $num_line"
+    #echo "num_line: $num_line"
     
     if [ $num_line -le 1 ]
         then
