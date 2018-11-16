@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# The limits of my code are the limits of my mode -- Wittpunstein
+
+# Features
+# Automatically generates bashfile for the given file name without file suffix
+# shebang is added too
+
+# Usage:
+# vibash ./test9/a
+#     will generate ./test9/a.bash in the vi editor
+
+# #### test_vibash.bash
+# #!/bin/bash
+# 
+# # Test the usage of vibash
+# # Operation on some files would fail on purpose
+# #     to show failure cases
+# 
+# # use ./test_vibash -o 
+# #     to override the check on the test dir/files
+# 
+# echo_start(){
+#     echo "Start test $1 ============================="
+# }
+# 
+# init(){
+#     echo_start "$1"
+#     dir=./test9
+#     rm -r $dir
+#     mkdir $dir
+# }
+# 
+# run_tests(){
+#     if [[ -e $dir && "-o" != "$option" ]] 
+#         then
+#         echo "Dir $dir existed. Quit."
+#         exit 1 
+#     fi
+# 
+#     for test in "$@"
+#         do
+#         init "$test"
+#         $test
+#     done
+# }
+# 
+# test1(){
+#     ./vibash $dir/a
+#     cat $dir/a.bash
+# }
+# 
+# option="$1"
+# run_tests test1
+# 
+
+
+fpath=$(realpath "$0")
+swd=${fpath%/*}
+
+# script $fpath $bash_type $suffix
+"$swd/vishell.bash" "$@" "sh" "sh"

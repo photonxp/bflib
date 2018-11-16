@@ -53,7 +53,7 @@ test_wrap_touch(){
 
         wrap_touch "$dpath_test/a.$sfx" "$stype" "$sfx"
         actual=$(head -1 $dpath_test/a.$sfx)
-        assert_equal_str "#!/bin/$stype" "$actual"
+        assert_equal_str "#!/usr/bin/env $stype" "$actual"
     
     #    wrap_touch "$dpath_test/a.bash" "bash" >/dev/null 1>&2
         wrap_touch "$dpath_test/a.$sfx" "$stype" "$sfx"
@@ -62,7 +62,8 @@ test_wrap_touch(){
         cd "$dpath_test"
         wrap_touch "bash3" "$stype" "$sfx"
         actual=$(head -1 ./bash3.$sfx)
-        assert_equal_str "#!/bin/$stype" "$actual"
+        #assert_equal_str "#!/bin/$stype" "$actual"
+        assert_equal_str "#!/usr/bin/env $stype" "$actual"
         cd -
     }
 
