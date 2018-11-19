@@ -273,7 +273,7 @@ assert_in_str_adapt(){
         printf "$actl" | grep -Pq "$expt"
         retval=$?
         actl=$(printf "$actl")
-        expt=$(escape "$expt" "$escape_list")
+        #expt=$(escape "$expt" "$escape_list")
         : ${actl:='""' or NEWLINE}
     elif [[ "raw" == "$3" && "transcode_escape" == "$4" ]]
         then

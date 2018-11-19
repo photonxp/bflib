@@ -202,6 +202,10 @@ test_assert_in_str(){
     rslt=$(assert_in_str "a" "ba")
     printf "$rslt" | grep -Eq "Pass"
     assert_equal_num 0 $?
+
+    rslt=$(assert_in_str "hello" "hello\nworld")
+    printf "$rslt" | grep -Eq "Pass"
+    assert_equal_num 0 $?
 }
 
 test_assert_file_exists(){

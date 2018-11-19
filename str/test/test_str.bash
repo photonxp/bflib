@@ -3,7 +3,14 @@
 spath=$(realpath "$0")
 swd=${spath%/*}
 source "$swd"/testf.bashlib
-source "$swd"/../str.bashlib
+source "$swd"/str.bashlib
+
+test_get_str_length(){
+    length=$(get_str_length "abc")
+    assert_equal_num 3 "$length"  
+    length=$(get_str_length "")
+    assert_equal_num 0 "$length"  
+}
 
 test_chk_empty_str(){
     chk_empty_str ""
@@ -11,13 +18,6 @@ test_chk_empty_str(){
 
     chk_empty_str "a"
     assert_equal_num 0 "$?"  
-}
-
-test_get_str_length(){
-    length=$(get_str_length "abc")
-    assert_equal_num 3 "$length"  
-    length=$(get_str_length "")
-    assert_equal_num 0 "$length"  
 }
 
 test_chk_str_start_idx(){
@@ -120,6 +120,60 @@ test_get_char_by_idx(){
     assert_equal_str "a" "$rslt"
 }
 
+test_get_substr_by_idx_pair(){
+    # two ":" idx
+    rslt=$(get_substr_by_idx_pair "abc" ":" ":")
+    assert_equal_num 1 $?
+    assert_in_str "idx: Start idx and end idx cannot both be ':'" "$rslt"
+
+    # start idx is ":" 
+    rslt=$(get_substr_by_idx_pair "abc" ":" "0")
+    assert_equal_num 0 $?
+    assert_in_str "a" "$rslt"
+
+    # end idx is ":" 
+    rslt=$(get_substr_by_idx_pair "abc" "0" ":")
+    assert_equal_num 0 $?
+    assert_in_str "abc" "$rslt"
+
+    # empty str
+    rslt=$(get_substr_by_idx_pair "" 1 1)
+    assert_equal_num 1 $?
+    assert_in_str "Str: Length is 0" "$rslt"
+
+    # nagative start idx
+    rslt=$(get_substr_by_idx_pair "abc" -1 1)
+    assert_equal_num 1 $?
+    assert_in_str "Start idx: -1 is less than 0" "$rslt"
+
+    # start idx above upper limit
+    rslt=$(get_substr_by_idx_pair "abc" 3 1)
+    assert_equal_num 1 $?
+    assert_in_str "Start idx: 3 is larger than str idx upper limit 2" "$rslt"
+
+    # nagative end idx
+    rslt=$(get_substr_by_idx_pair "abc" 1 -1)
+    assert_equal_num 1 $?
+    assert_in_str "End idx: -1 is less than 0" "$rslt"
+
+    # end idx above upper limit
+    rslt=$(get_substr_by_idx_pair "abc" 1 3)
+    assert_equal_num 1 $?
+    assert_in_str "End idx: 3 is larger than str idx upper limit 2" "$rslt"
+
+    rslt=$(get_substr_by_idx_pair "abc" 0 1)
+    assert_equal_num 0 $?
+    assert_equal_str "ab" "$rslt"
+
+    rslt=$(get_substr_by_idx_pair "abc" 2 2)
+    assert_equal_num 0 $?
+    assert_equal_str "c" "$rslt"
+
+    rslt=$(get_substr_by_idx_pair "abc" 2 1)
+    assert_equal_num 0 $?
+    assert_equal_str "bc" "$rslt"
+}
+
 test_str2arr(){
     str2arr ""
     assert_equal_num 1 $?
@@ -139,8 +193,8 @@ test_str_do_iter(){
 
     rslt=$(str_do_iter "ab" "fun1")
     #expt="hello\\\\nhello\\\\n"
-    expt="hello\\\\n"
-    assert_in_str "$expt" "$rslt"
+    #expt="hello\\\\n"
+    assert_in_str $(printf "hello") "$rslt"
 }
 
 test_xstr(){
@@ -155,5 +209,5 @@ tests1="test_chk_empty_str test_get_str_length"
 tests2="test_chk_str_start_idx test_chk_str_end_idx test_get_substr_by_start_end test_chk_str_idx test_get_char_by_idx"
 tests3="test_str_do_iter test_xstr"
 tests="$tests1 $tests2 $tests3"
-run_tests "test_str2arr"
-#run_tests $tests
+#run_tests "test_get_substr_by_idx_pair"
+run_tests $tests
