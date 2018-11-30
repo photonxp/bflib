@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# The limits of my code are the limits of my mode -- Wittpunstein
+
+# Features
+# Automatically generates bashfile for the given file name without file suffix
+# shebang is added too
+
+# Usage:
+# vibash ./test9/a
+#     will generate ./test9/a.bash in the vi editor
+
+fpath=$(realpath "$0")
+swd=${fpath%/*}
+
+# script $fpath $bash_type $suffix
+"$swd/vishell.bash" "$@" "bash" "bashlib"

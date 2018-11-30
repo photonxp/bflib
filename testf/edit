@@ -1,0 +1,13 @@
+# #!/bin/bash
+# 
+# source ./testf.bash
+# 
+# test1(){
+#     echo "hello"
+# }
+# 
+# test2(){
+#     echo "world"
+# }
+# 
+# run_tests "test1" "test2"

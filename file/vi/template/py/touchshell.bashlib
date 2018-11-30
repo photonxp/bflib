@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# The limits of my code are the limits of my mode -- Wittpunstein
+
+# Features
+# Automatically generates bashfile for the given file name without file suffix
+# shebang is added too
+
+# Usage:
+# vibash ./test9/a
+#     will generate ./test9/a.bash in the vi editor
+
+# #### test_vibash.bash
+# #!/bin/bash
+# 
+# # Test the usage of vibash
+# # Operation on some files would fail on purpose
+# #     to show failure cases
+# 
+# # use ./test_vibash -o 
+# #     to override the check on the test dir/files
+# 
+# echo_start(){
+#     echo "Start test $1 ============================="
+# }
+# 
+# init(){
+#     echo_start "$1"
+#     dir=./test9
+#     rm -r $dir
+#     mkdir $dir
+# }
+# 
+# run_tests(){
+#     if [[ -e $dir && "-o" != "$option" ]] 
+#         then
+#         echo "Dir $dir existed. Quit."
+#         exit 1 
+#     fi
+# 
+#     for test in "$@"
+#         do
+#         init "$test"
+#         $test
+#     done
+# }
+# 
+# test1(){
+#     ./vibash $dir/a
+#     cat $dir/a.bash
+# }
+# 
+# option="$1"
+# run_tests test1
+# 
+
+get_path_parts(){
+    fname=$(get_fname_by_path "$1")
+    fname_sfx=$(get_sfx_by_fname "$fname")
+}
+
+get_fpath_new(){
+    sfx_old="$1"
+    sfx_new="$2"
+    fpath="$3"
+
+    if [ "$sfx_old" == "$sfx_new" ] 
+        then
+    #echo "$sfx_old" == "$sfx_new"  
+        echo "NOTICE:: Found name suffix '$sfx_old' in input"
+        echo "$fpath"
+        fpath_new="$fpath"
+        return
+    fi
+
+    fpath_new="$fpath.$sfx_new"
+}
+
+do_extra(){
+    :
+}
+
+do_newfile(){
+    sfx_new="$1"
+    touch "$fpath_new"
+    chmod u+x "$fpath_new"
+    printf "#!/usr/bin/env $shell_type\n\n\n" > "$fpath_new"
+    do_extra
+}
+
+wrap_touch(){
+    fpath="$1"
+    shell_type="$2"
+    sfx_new="$3"
+
+    get_path_parts "$fpath"
+    #echo "fname: $fname"
+    #echo "fname_sfx: $fname_sfx"
+    get_fpath_new "$fname_sfx" "$sfx_new" "$fpath"
+    #echo "fpath_new: $fpath_new"
+
+    if [ -e $fpath_new ]
+        then
+        echo "NOTICE:: $fpath_new"
+        echo "NOTICE:: File already existed. "
+        return 1
+    fi
+    
+    do_newfile "$sfx_new"
+    return 0
+}
+
+

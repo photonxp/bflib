@@ -1,0 +1,276 @@
+#!/bin/bash
+
+# check first if (g)awk has the similar builtin functions
+
+printf_r(){
+    # printf raw str
+    printf '%s' "$@"
+}
+
+get_str_length(){
+    printf_r "${#1}"
+}
+
+chk_empty_str(){
+    length=$(get_str_length "$1")
+    [ 0 -eq $length ] && return 1
+    return 0
+}
+
+chk_empty_str_with_err(){
+    str="$1"
+
+    chk_empty_str "$str"
+
+    if [ 1 -eq $? ]
+        then
+        echo "ERR:: Str: Length is 0."
+        return 1
+    fi
+
+    return 0
+}
+
+template_init_chk_str_start_end_idx(){
+    length="$1"
+    start="$2"
+    end="$3"
+
+    idx_limit_upper=$((length-1))
+}
+
+chk_str_start_idx(){
+    template_init_chk_str_start_end_idx "$@"
+
+    if [ $start -lt 0 ]
+        then
+        echo "ERR:: Start idx: $start is less than 0."
+        return 1
+    fi
+
+    if [ $start -gt $idx_limit_upper ]
+        then
+        echo "ERR:: Start idx: $start is larger than str idx upper limit $idx_limit_upper ."
+        return 1
+    fi
+
+    return 0
+}
+
+chk_str_end_idx(){
+    template_init_chk_str_start_end_idx "$@"
+
+    if [ $end -lt 0 ]
+        then
+        echo "ERR:: End idx: $end is less than 0."
+        return 1
+    fi
+
+    if [ $end -gt $idx_limit_upper ]
+        then
+        echo "ERR:: End idx: $end is larger than str idx upper limit $idx_limit_upper ."
+        return 1
+    fi
+
+    if [ $end -lt $start ]
+        then
+        echo "ERR:: End idx: $end is less than start idx $start ."
+        return 1
+    fi
+
+    return 0
+}
+
+get_substr_by_start_end(){
+    start="$2"
+    end="$3"
+
+    chk_empty_str_with_err "$1"
+    [ 1 -eq $? ] && return 1
+
+    length_str=$(get_str_length "$1")
+    chk_str_start_idx $length_str $start $end
+    [ 1 -eq $? ] && return 1
+
+    chk_str_end_idx $length_str $start $end
+    [ 1 -eq $? ] && return 1
+
+    length_substr=$((end-start+1))
+    printf_r "${1:$start:$length_substr}"
+}
+
+
+chk_str_idx_with_idxtype(){
+    length="$1"
+    idx="$2"
+    idx_type="$3"
+
+    idx_limit_upper=$((length-1))
+
+    if [ $length -lt 1 ]
+        then
+        echo "ERR:: Length: $length is less than 1."
+        return 1
+    fi
+
+    if [ $idx -lt 0 ]
+        then
+        echo "ERR:: $idx_type: $idx is less than 0."
+        return 1
+    fi
+    
+    if [ $idx -gt $idx_limit_upper ]
+        then
+        echo "ERR:: $idx_type: $idx is larger than str idx upper limit $idx_limit_upper""."
+        return 1
+    fi
+
+    return 0
+}
+
+chk_str_idx(){
+    length="$1"
+    idx="$2"
+
+    chk_str_idx_with_idxtype $length $idx "idx"
+}
+
+get_char_by_idx(){
+    str="$1"
+    idx="$2"
+
+    chk_empty_str_with_err "$1"
+    [ 1 -eq $? ] && return 1
+
+    length_str=$(get_str_length "$str")
+    chk_str_idx $length_str $idx "idx"
+    [ 1 -eq $? ] && return 1
+
+    printf_r "${str:$idx:1}"
+}
+
+get_substr_by_idx_pair(){
+    str="$1"
+    start="$2"
+    end="$3"
+
+    chk_empty_str_with_err "$1"
+    [ 1 -eq $? ] && return 1
+
+    length_str=$(get_str_length "$1")
+
+    if [[ ':' == "$start" && ':' == "$end" ]]
+        then
+        echo "ERR:: idx: Start idx and end idx cannot both be ':'""."
+        return 1
+    fi
+
+    if [ ':' == "$start" ]
+        then
+        start=0
+    fi
+
+    if [ ':' == "$end" ]
+        then
+        end=$((length_str-1))
+    fi
+
+    chk_str_idx_with_idxtype $length_str $start "Start idx"
+    [ 1 -eq $? ] && return 1
+    chk_str_idx_with_idxtype $length_str $end "End idx"
+    [ 1 -eq $? ] && return 1
+
+    if [ $start -gt $end ]
+        then
+        temp=$start
+        start=$end
+        end=$temp
+    fi
+
+    length_substr=$((end-start+1))
+    str_sub="${str:$start:$length_substr}"
+
+    printf_r "$str_sub"
+}
+
+get_leading_words_by_num(){
+    line="$1"
+    delimiter="$2"
+    n="$3"
+
+
+    if [ $n -le 0 ]
+        then
+        echo "ERR:: Num: Less or equal to 0."
+        return 1
+    fi
+
+    n_words=$(printf "$line" | cut -d "$delimiter" -f 1-"$n")
+    printf_r "$n_words"
+}
+
+str2arr(){
+    str="$1"
+
+    reterr_empty(){
+        echo "ERR:: Str: Empty str."
+        return 1
+    }
+
+    #! chk_empty_str "$str" && reterr_empty
+    ! chk_empty_str "$str" && {
+        echo "ERR:: Str: Empty str."
+        return 1
+    }
+    
+    unset arr_str
+    length=$(get_str_length "$str")
+    for (( i=0; $i<$length; i++ ))
+        do
+        arr_str[$i]="${str:$i:1}"
+    done
+
+    echo "arr_str[@]"
+}
+
+str_do_iter(){
+    str="$1"
+    fun="$2"
+
+    # i++
+    length=$(get_str_length "$str")
+    for (( i=0; $i<$length; i++ ))
+        do
+        #arr_str[$i]="${str:$i:1}"
+        "$fun"
+    done
+}
+
+xstr(){
+    str1="$1"
+    str2="$2"
+
+    length_str1=${#str1}
+    length_str2=${#str2}
+
+    unset arr_xstr
+    # i++
+    for (( i=0; $i<$length_str1; i++ ))
+        do
+        char_i_str1=${str1:$i:1}
+        # j++
+        for (( j=0; $j<$length_str2; j++ ))
+            do
+            char_j_str2=${str2:$j:1}
+            # the operator "==" could be overwritten by a var
+            if [ "y$char_i_str1" == "y$char_j_str2" ]
+                then
+                arr_xstr[$i]="$char_j_str2"
+                break
+            fi
+        done
+    done
+
+    xstr="${arr_xstr[@]}"
+    echo "$xstr"
+}

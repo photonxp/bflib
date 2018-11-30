@@ -1,0 +1,80 @@
+#/bin/bash
+
+escape(){
+    str="$1"
+
+    # to be updated
+    old="./^$()"
+    new="./^$()"
+    printf "$str" | tr "$old" "$new"
+}
+
+is_sfx_fname(){
+    printf "$1" | grep -Eq "\."
+    return $?
+}
+
+get_fname_by_path(){
+    echo "${1##*/}"
+}
+
+get_fname_by_spath(){
+    echo "${0##*/}"
+}
+
+get_sfx_by_fname(){
+    is_sfx_fname "$1"
+    if [ 0 -eq $? ]
+        then
+        echo "${1##*.}"
+        return
+    fi
+
+    echo ""
+}
+
+get_nosfx_by_fname(){
+    is_sfx_fname "$1"
+    if [ 0 -eq $? ]
+        then
+        echo "${1%.*}"
+        return
+    fi
+
+    echo "$1"
+}
+
+
+get_sfx_by_spath(){
+    sname=$(get_fname_by_spath)
+    sfx=$(get_sfx_by_fname $sname)
+    echo "$sfx"
+}
+
+chk_fname_by_sfx(){
+    fname="$1"
+    sfx="$2"
+
+    fsfx=$(get_sfx_by_fname "$fname")
+    echo "fsfx: $fsfx"
+    if [ "y$fsfx" == "y$sfx" ]
+        then
+        return 0
+    fi
+
+    return 1
+}
+
+chk_fname_by_str(){
+    # not easy to finish if couldn't quote the str
+
+    fname="$1"
+    sfx="$2"
+
+    fsfx=$(get_sfx_by_fname "$fname")
+    sed_ptn="$sfx$"
+    echo "sed_ptn: $sed_ptn"
+    printf "$fname" | grep -Eq "$sed_ptn"
+    retval=$?
+    return $retval
+}

@@ -1,0 +1,421 @@
+#!/bin/bash
+
+# ####test_demo_testf.bash
+# #!/bin/bash
+# 
+# # Usage:
+# # ./test_demo_testf.bash
+# 
+# # Use the -o to override the check on the test dir
+# # ./test_demo_testf.bash -o
+#
+# source ./testf.bash
+# 
+# test1(){
+#     echo "hello"
+# }
+# 
+# test2(){
+#     echo "world"
+# }
+# 
+# opt="$1"
+# run_tests "test1" "test2"
+
+
+spath=$(realpath "$0")
+swd=${spath%/*}
+source "$swd"/escape.bashlib
+source "$swd"/array.bashlib
+source "$swd"/str.bashlib
+
+echo_start(){
+    echo "$1 ============================="
+}
+
+get_bwd(){
+    # bwd: base working dir
+    # cwd: current working dir
+    cwd=$(realpath .)
+    : ${bwd=$cwd}
+}
+
+init_time_log(){
+    fpath_log="$bwd"/time.log
+    if [ -f $fpath_log ]
+        then
+        if [ "-o" != "$opt" ]
+            then
+            echo "Cannot create file:: File $fpath_log exists. Exit."
+            exit 1
+        fi
+        
+        rm $fpath_log
+    fi
+
+    touch $fpath_log
+}
+
+log_datetime(){
+    datef=`date '+%Y%m%d.%H%M%S'`
+    echo "$1$datef" >> $fpath_log
+}
+
+init_dir(){
+    dpath_test="$bwd"/test9
+    if [ -e $dpath_test ]
+        then
+        if [ "-o" != "$opt" ]
+            then
+            echo "Cannot create dir:: Dir (or file) $dpath_test exists. Exit."
+            exit 1
+        fi
+        
+        rm -r $dpath_test
+    fi
+    
+    mkdir $dpath_test
+}
+
+init_script_dir(){
+    # to be overwritten by the calling script
+    init_dir
+}
+
+init_script_extra(){
+    # to be overwritten by the calling script
+    :
+}
+
+finish_script_extra(){
+    # to be overwritten by the calling script
+    :
+}
+
+init_script(){
+    echo_start "Start script $0"
+    get_bwd
+    init_time_log
+    log_datetime "Start script $0 : "  
+    init_script_dir  
+    init_script_extra
+}
+
+finish_script(){
+    finish_script_extra
+    echo_start "Finish script $0"
+    log_datetime "Finish script $0 : "
+}
+
+init_test_extra(){
+    # to be overwritten by the calling script
+    :
+}
+
+finish_test_extra(){
+    # to be overwritten by the calling script
+    :
+}
+
+init_test(){
+    echo_start "Start $1 : "
+    log_datetime "Start $1 : "
+    init_test_extra
+}
+
+finish_test(){
+    finish_test_extra
+    log_datetime "Finish $1 : "
+}
+
+run_testsuite(){
+    for test in $(echo "$@")
+        do
+        init_test "$test"
+        $test
+        finish_test "$test"
+    done
+}
+
+run_tests(){
+    init_script
+    for suite in "$@"
+        do
+        run_testsuite "$suite" 
+    done
+
+    finish_script
+}
+
+get_first_n_words_by_space(){
+    line="$1"
+    n="$2"
+    echo $(printf "$line" | cut -d " " -f 1-"$n")
+}
+
+pass(){
+    echo Pass
+    return 0
+}
+
+assert_equal_str_raw(){
+    expected="$1"
+    actual="$2"
+    if [ "$expected" != "$actual" ]
+        then
+        echo "Fail: '$expected' != '$actual'"
+        return 64
+    fi
+
+    pass
+}
+
+assert_equal_str(){
+    expt=$(printf "$1")
+    actl="$2"
+
+    assert_equal_str_raw "$expt" "$actl"
+}
+
+assert_equal_num(){
+    expected="$1"
+    actual="$2"
+
+    if [[ "y" == "y$expected" && "y"=="y$actual" ]]
+        then
+            echo "ERR:: Expt: expected is empty, Actl: actual is empty"
+        return 1
+    fi
+    
+    if [ "y" == "y$expected" ]
+        then
+        echo "ERR:: Expt: expected is empty"
+        return 1
+    fi
+    
+    if [ "y" == "y$actual" ]
+        then
+        echo "ERR:: Actl: actual is empty"
+        return 1
+    fi
+
+    [ $expected -ne $actual ]
+    retval=$?
+    if [ $retval -ge 2  ]
+        then
+        echo "ERR:: Miscellaneous Err: retcode '$retval'."
+        return $retval
+    fi
+    
+    if [ $expected -ne $actual ]
+        then
+        echo "Fail: '$expected' != '$actual'"
+        return 64 
+    fi
+
+    pass
+}
+
+
+assert_in_str_adapt(){
+    # for expt
+    # chars with \char escape format 
+    # are NOT interpreted before grep
+
+    # for actl
+    # chars with \char escape format 
+    # are NOT interpreted after echo in the grep cmd
+
+    expt_prev="$1"
+    actl="$2"
+
+    # Expt:"" has no sense in assert_in_str, use assert_equal_str
+    if [ "y" == "y$expt_prev" ]
+        then
+        echo "ERR:: Expt: is empty. Use assert_equal_str instead."
+        return 1
+    fi
+
+    escape_list='\'
+    expt_add_escape=$(escape "$expt_prev" "$escape_list")
+
+    retval=113
+    # grep the expected in the actual
+    if [[ "raw" == "$3" && "raw" == "$4" ]]
+        then
+        # one word "\" could cause problem in echo "$actl"
+        # one word "\\" could be escaped 
+        #     in echo "$actl" or printf "%s"
+        expt="$expt_add_escape"
+        printf '%s' "$actl" | grep -Pq "$expt"
+        retval=$?
+    elif [[ "as_is" == "$3" && "raw" == "$4" ]]
+        then
+        # as_is: no added escape to "$expt"
+        expt="$expt_prev"
+        #printf '%s' "expt: $expt, actl: $actl, arg3: $3, arg4: $4 "
+        echo
+        printf '%s' "$actl" | grep -Pq "$expt"
+        retval=$?
+    elif [[ "as_is" == "$3" && "transcode_escape" == "$4" ]]
+        then
+        # interprete chars with excape in $actl
+        expt="$expt_prev"
+        #printf '%s' "expt: $expt, actl: $actl, arg3: $3, arg4: $4"
+        expt_interpreted=$(printf "$expt")
+        #printf '%s' "expt_interpreted: '$expt_interpreted'"
+        if [ "y" == "y$expt_interpreted" ]
+            then
+            echo "ERR:: Expt: Empty or newline expt after interpretion. Check escapes."
+            return 1
+        fi
+        #printf '%s' "$actl" | grep -Pq "$expt"
+        printf "$actl" | grep -Pq "$expt"
+        retval=$?
+        actl=$(printf "$actl")
+        #expt=$(escape "$expt" "$escape_list")
+        : ${actl:='""' or NEWLINE}
+    elif [[ "raw" == "$3" && "transcode_escape" == "$4" ]]
+        then
+        # this if branch is probaby not very useful
+        # echo "expt: $expt, actl: $actl, arg3: $3, arg4: $4"
+        printf "$actl" | grep -Pq "$expt_add_escape"
+        retval=$?
+        expt="$expt_prev"
+    else 
+        echo "ERR:: Str type '$3' '$4': Not implemented. Check the code."
+        return 1
+    fi
+
+    if [ 1 -lt $retval ]
+        then
+        echo "ERR:: Miscellaneous Err: retcode '$retval'."
+        return $retval
+    fi
+
+    if [ 0 -ne $retval ]
+        then
+        # KEEP THE SPACE IN THE list AFTER \
+        #list_escape='\'
+        #actl_add_escp=$(escape "$actl" "$list_escape")
+        #echo "Fail: '$expt_add_escp' IS NOT in '$actl_add_escp'"
+        printf '%s' "Fail: '$expt' IS NOT in '$actl'."
+        echo
+        return 64
+    fi
+
+    pass
+}
+
+assert_in_str_raw(){
+    # for expt
+    # chars with \char escape format
+    # are **NOT** interpreted before grep cmd in the sub function
+
+    # for actl
+    # chars with \char escape format
+    # are **NOT** interpreted before grep cmd in the sub function
+
+    assert_in_str_adapt "$1" "$2" "raw" "raw"
+}
+
+assert_in_str_asis_expt_raw_actl(){
+    assert_in_str_adapt "$1" "$2" "as_is" "raw"
+}
+
+assert_in_str_asis_expt_transcode_actl(){
+    assert_in_str_adapt "$1" "$2" "as_is" "transcode_escape"
+}
+
+assert_in_str_transcode_actl(){
+    # for expt
+    # chars with \char escape format
+    # are **NOT** interpreted before grep cmd in the sub function
+
+    # for actl
+    # chars with \char escape format
+    # are interpreted before grep cmd in the sub function
+
+    assert_in_str_adapt "$1" "$2" "raw" "transcode_escape"
+}
+
+assert_in_str(){
+    # for expt
+    # chars with \char escape format 
+    # are **NOT** interpreted before calling the raw function
+    # but would be escaped in the by grep cmd in the subfuction
+
+    # for actl
+    # chars with \char escape format 
+    # are interpreted before grep cmd in the sub function
+    # are **NOT** interpreted before grep cmd in the sub function
+
+    #assert_in_str_raw "$1" "$2"
+    #assert_in_str_asis_expt_raw_actl "$1" "$2"
+    assert_in_str_asis_expt_transcode_actl "$1" "$2"
+}
+
+assert_file_exists(){
+    if [ ! -e "$1" ]
+        then
+        echo Fail: Actl: "'$1'"
+        return 64
+    fi
+     
+    pass
+}
+
+assert_file_not_exists(){
+    if [ -e "$1" ]
+        then
+        echo Fail: Actl: "'$1'"
+        return 64
+    fi
+       
+    pass
+}
+
+chk_is_link(){
+    if [ ! -L "$1" ]
+        then
+        echo "ERR:: Link: Not a symbolic link '$1'"
+        return 1
+    fi
+}
+
+assert_ltarget_exists(){
+    chk_is_link "$1" 
+    retval=$?
+    [ 0 != $retval ] && return $retval
+
+    fpath_target=$(readlink -m "$1")
+    if [ ! -e "$fpath_target" ]
+        then
+        echo Fail: Target File: "'$fpath_target'"
+        return 64
+    fi
+
+    pass
+}
+
+assert_ltarget_not_exists(){
+    chk_is_link "$1" 
+    retval=$?
+    [ 0 != $retval ] && return $retval
+
+    fpath_target=$(readlink -m "$1")
+    if [ -e "$fpath_target" ]
+        then
+        echo "Fail: Target File:" "'$fpath_target'"
+        return 64
+    fi
+
+    pass
+}
+
+
+
+test_hello(){
+    # call the tested script
+    :
+}

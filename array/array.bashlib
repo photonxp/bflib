@@ -1,0 +1,84 @@
+#!/bin/bash
+
+get_arr_length(){
+    # doesn't work, deprecated
+
+    # arr quirk
+    # length is 0, if ${!1} is ""
+    # and it's impossible to check "" inside a function
+    # so check "" outside 
+
+    arr=(${!1})
+    length="${#arr[@]}"
+
+    echo "$length"
+}
+
+chk_arr_length(){
+    # doesn't work, deprecated
+
+    arr=(${!1})
+    length=$(get_arr_length arr[@])
+
+    if [ 0 -eq $length ]
+        then
+        return 1
+    fi
+
+    return 0
+}
+
+arr2str(){
+    # element of "" is lost
+    # but the result isn't affected
+
+    arr=("${!1}")
+    printf "%s" "${arr[@]}"
+    #printf -v "$var" "%s" "${arr[@]}"
+}
+
+arr_do_iter(){
+    # element of "" is lost
+    # the result could be affected
+    # use with attention
+
+    arr=("${!1}")
+    fun="$2"
+
+    # i++
+    length=${#arr[@]}
+    for (( i=0; $i<$length; i++ ))
+        do
+        "$fun"
+    done
+}
+
+arr_intersect_do(){
+    arr1=("${!1}")
+    arr2=("${!2}")
+    fun="$3"
+
+    length_arr1=${#arr1[@]}
+    length_arr2=${#arr2[@]}
+
+    unset arr_intersect
+
+    # i++
+    for (( i=0; $i<$length_arr1; i++ ))
+        do
+        item_i_arr1=${arr1[$i]}
+        #echo "item_i_arr1: $item_i_arr1"
+        # j++
+        for (( j=0; $j<$length_arr2; j++ ))
+            do
+            item_j_arr2=${arr2[$j]}
+            #echo "item_j_arr2: $item_j_arr2"
+            if [ "y$item_i_arr1" == "y$item_j_arr2" ]
+                then
+                #arr_intersect[$i]="$item_j_arr2"
+                $fun "$item_j_arr2"
+                break
+            fi
+        done
+    done
+}
